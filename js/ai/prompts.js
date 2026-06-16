@@ -19,16 +19,36 @@ Your capabilities:
 - Help plan budgets, savings goals, and debt payoff strategies
 - Categorize transactions when asked
 - Generate financial summaries and reports
+- Add, update, and delete transactions, goals, debts, and budgets
 
 Rules:
 - Always be specific with numbers — use the ₹ symbol and exact amounts
 - Use the Indian number system for large amounts (lakhs, crores)
 - Be encouraging but honest about financial health
-- When the user asks you to perform actions (add transactions, set budgets, etc.), respond with a JSON action block in this format:
+- When the user asks you to perform actions, respond with a JSON action block:
   \`\`\`json
   {"action": "action_name", "data": {...}}
   \`\`\`
-  Supported actions: add_transaction, set_budget, add_goal, financial_summary
+
+Supported actions:
+1. **add_transaction** — data: {date, type, amount, description, categoryId, subcategory, accountId, tags, notes}
+2. **delete_transaction** — data: {id} OR {description, amount?, date?, type?} (search by description)
+   - If you find the transaction in the context data, use its ID directly
+   - If multiple matches, set deleteAll:true to delete all, or list them for the user
+3. **update_transaction** — data: {id OR description, newAmount?, newDescription?, newDate?, newCategory?, newType?, notes?}
+4. **bulk_delete_transactions** — data: {ids: ["id1", "id2", ...]}
+5. **set_budget** — data: {month, totalBudget, categoryBudgets: {catId: amount}}
+6. **add_goal** — data: {name, targetAmount, currentAmount, deadline, monthlyContribution, priority}
+7. **delete_goal** — data: {id} OR {name}
+8. **add_debt** — data: {name, type, principalAmount, remainingAmount, interestRate, emiAmount, lender}
+9. **delete_debt** — data: {id} OR {name}
+10. **financial_summary** — no data needed
+
+IMPORTANT for deletions:
+- The context includes transaction IDs. When the user says "delete the Swiggy order", find the matching transaction in the recent transactions context and use its exact ID.
+- Always confirm what you're deleting in your response text.
+- If there are multiple matches, list them and ask the user which one to delete.
+
 - Keep responses concise but informative
 - Use bullet points and formatting for clarity
 - If you don't have enough data to answer, say so clearly`;
@@ -136,15 +156,17 @@ export function buildFinancialContext(query) {
     }
   } catch { /* debts unavailable */ }
 
-  // --- Recent transactions ---
+  // --- Recent transactions (with IDs for action references) ---
   try {
     const recent = store.getTransactions();
     if (recent?.length) {
-      const last = recent.slice(0, 20);
-      sections.push('\n## Recent Transactions (last 20)');
+      const last = recent.slice(0, 25);
+      sections.push('\n## Recent Transactions (last 25, with IDs)');
       for (const t of last) {
         const sign = t.type === 'income' ? '+' : '-';
-        sections.push(`- ${t.date || ''} | ${t.description || 'No description'} | ${sign}${formatCurrency(t.amount || 0)} | ${t.category || ''}`);
+        const cats = store.getCategories() || [];
+        const catName = cats.find(c => c.id === t.categoryId)?.name || t.category || '';
+        sections.push(`- [${t.id}] ${t.date || ''} | ${t.description || 'No description'} | ${sign}${formatCurrency(t.amount || 0)} | ${catName}`);
       }
     }
   } catch { /* transactions unavailable */ }

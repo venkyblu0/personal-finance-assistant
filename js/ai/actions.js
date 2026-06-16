@@ -82,6 +82,78 @@ export async function executeAction(actionObj) {
       }
     }
 
+    case 'delete_transaction': {
+      try {
+        // Support deletion by ID directly
+        if (data.id) {
+          const txn = store.getTransaction(data.id);
+          if (!txn) return `❌ Transaction with ID "${data.id}" not found.`;
+          store.deleteTransaction(data.id);
+          return `✅ Deleted transaction: ${txn.description || 'Unknown'} — ${formatCurrency(txn.amount)}`;
+        }
+        // Support deletion by search (description + optional amount/date)
+        if (data.description || data.search) {
+          const matches = findTransactions(data);
+          if (matches.length === 0) return `❌ No matching transactions found for "${data.description || data.search}".`;
+          if (matches.length === 1) {
+            store.deleteTransaction(matches[0].id);
+            return `✅ Deleted transaction: ${matches[0].description} — ${formatCurrency(matches[0].amount)} on ${matches[0].date}`;
+          }
+          // Multiple matches — delete all if data.deleteAll is true
+          if (data.deleteAll || data.delete_all) {
+            const ids = matches.map(m => m.id);
+            const count = store.deleteTransactions(ids);
+            return `✅ Deleted ${count} matching transactions for "${data.description || data.search}".`;
+          }
+          // Otherwise list them for user to pick
+          const list = matches.slice(0, 5).map((t, i) => `  ${i + 1}. ${t.date} — ${t.description} — ${formatCurrency(t.amount)} (ID: ${t.id})`).join('\n');
+          return `⚠️ Found ${matches.length} matching transactions:\n${list}\nPlease specify which one to delete by providing the exact ID.`;
+        }
+        return `❌ Please specify which transaction to delete — provide description, amount, or date.`;
+      } catch (e) {
+        return `❌ Failed to delete transaction: ${e.message}`;
+      }
+    }
+
+    case 'update_transaction': {
+      try {
+        if (!data.id && !data.description) return `❌ Please specify which transaction to update (by ID or description).`;
+        let txnId = data.id;
+        if (!txnId && data.description) {
+          const matches = findTransactions(data);
+          if (matches.length === 0) return `❌ No matching transaction found for "${data.description}".`;
+          if (matches.length > 1) {
+            const list = matches.slice(0, 5).map((t, i) => `  ${i + 1}. ${t.date} — ${t.description} — ${formatCurrency(t.amount)} (ID: ${t.id})`).join('\n');
+            return `⚠️ Found ${matches.length} matches:\n${list}\nSpecify the exact ID to update.`;
+          }
+          txnId = matches[0].id;
+        }
+        const updates = {};
+        if (data.newAmount !== undefined || data.new_amount !== undefined) updates.amount = parseFloat(data.newAmount || data.new_amount);
+        if (data.newDescription || data.new_description) updates.description = data.newDescription || data.new_description;
+        if (data.newDate || data.new_date) updates.date = data.newDate || data.new_date;
+        if (data.newCategory || data.new_category_id) updates.categoryId = data.newCategory || data.new_category_id;
+        if (data.newType || data.new_type) updates.type = data.newType || data.new_type;
+        if (data.notes) updates.notes = data.notes;
+        const updated = store.updateTransaction(txnId, updates);
+        if (!updated) return `❌ Transaction not found.`;
+        return `✅ Updated transaction: ${updated.description} — ${formatCurrency(updated.amount)}`;
+      } catch (e) {
+        return `❌ Failed to update transaction: ${e.message}`;
+      }
+    }
+
+    case 'bulk_delete_transactions': {
+      try {
+        const ids = data.ids || [];
+        if (!ids.length) return `❌ No transaction IDs provided.`;
+        const count = store.deleteTransactions(ids);
+        return `✅ Deleted ${count} transaction(s).`;
+      } catch (e) {
+        return `❌ Failed to bulk delete: ${e.message}`;
+      }
+    }
+
     case 'set_budget': {
       try {
         const month = data.month || getCurrentMonth();
@@ -113,6 +185,59 @@ export async function executeAction(actionObj) {
       }
     }
 
+    case 'delete_goal': {
+      try {
+        if (data.id) {
+          store.deleteGoal(data.id);
+          return `✅ Goal deleted.`;
+        }
+        // Find by name
+        const goals = store.getGoals() || [];
+        const match = goals.find(g => g.name.toLowerCase().includes((data.name || '').toLowerCase()));
+        if (!match) return `❌ No goal found matching "${data.name}".`;
+        store.deleteGoal(match.id);
+        return `✅ Deleted goal: "${match.name}"`;
+      } catch (e) {
+        return `❌ Failed to delete goal: ${e.message}`;
+      }
+    }
+
+    case 'add_debt': {
+      try {
+        const debtData = {
+          name: data.name || 'Unnamed Debt',
+          type: data.type || 'loan',
+          principalAmount: parseFloat(data.principalAmount || data.principal_amount) || 0,
+          remainingAmount: parseFloat(data.remainingAmount || data.remaining_amount) || 0,
+          interestRate: parseFloat(data.interestRate || data.interest_rate) || 0,
+          emiAmount: parseFloat(data.emiAmount || data.emi_amount) || 0,
+          startDate: data.startDate || data.start_date || new Date().toISOString().split('T')[0],
+          endDate: data.endDate || data.end_date || '',
+          lender: data.lender || '',
+        };
+        store.addDebt(debtData);
+        return `✅ Debt added: "${debtData.name}" — ${formatCurrency(debtData.remainingAmount)} at ${debtData.interestRate}%`;
+      } catch (e) {
+        return `❌ Failed to add debt: ${e.message}`;
+      }
+    }
+
+    case 'delete_debt': {
+      try {
+        if (data.id) {
+          store.deleteDebt(data.id);
+          return `✅ Debt deleted.`;
+        }
+        const debts = store.getDebts() || [];
+        const match = debts.find(d => d.name.toLowerCase().includes((data.name || '').toLowerCase()));
+        if (!match) return `❌ No debt found matching "${data.name}".`;
+        store.deleteDebt(match.id);
+        return `✅ Deleted debt: "${match.name}"`;
+      } catch (e) {
+        return `❌ Failed to delete debt: ${e.message}`;
+      }
+    }
+
     case 'financial_summary': {
       try {
         return generateFinancialSummary();
@@ -140,6 +265,30 @@ export async function executeActions(actions) {
     results.push(result);
   }
   return results.join('\n');
+}
+
+/**
+ * Find transactions matching search criteria.
+ * @param {Object} criteria - { description, search, amount, date, type }
+ * @returns {Array<Object>}
+ */
+function findTransactions(criteria) {
+  const all = store.getTransactions();
+  const query = (criteria.description || criteria.search || '').toLowerCase();
+
+  return all.filter(t => {
+    // Match by description (fuzzy)
+    const descMatch = !query || (t.description || '').toLowerCase().includes(query)
+      || (t.notes || '').toLowerCase().includes(query);
+    // Match by amount (if provided)
+    const amtMatch = !criteria.amount || Math.abs(t.amount - parseFloat(criteria.amount)) < 1;
+    // Match by date (if provided)
+    const dateMatch = !criteria.date || t.date === criteria.date;
+    // Match by type (if provided)
+    const typeMatch = !criteria.type || t.type === criteria.type;
+
+    return descMatch && amtMatch && dateMatch && typeMatch;
+  });
 }
 
 /**
