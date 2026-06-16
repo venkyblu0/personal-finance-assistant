@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanceAI — Personal Financial Assistant</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <script type="module" crossorigin src="/personal-finance-assistant/assets/index-BQnLtNzt.js"></script>
+  <link rel="stylesheet" crossorigin href="/personal-finance-assistant/assets/index-DKv1Dabb.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Sidebar Navigation                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar__logo">
+        <div class="logo-icon">💰</div>
+        <span class="logo-text">FinanceAI</span>
+      </div>
+
+      <!-- Profile indicator -->
+      <div id="sidebar-profile" class="sidebar__profile" title="Switch profile">
+        <div class="sidebar__profile-avatar" id="sidebar-profile-avatar">👤</div>
+        <div class="sidebar__profile-info">
+          <div class="sidebar__profile-name" id="sidebar-profile-name">User</div>
+          <div class="sidebar__profile-switch">Switch profile</div>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a href="#/dashboard" class="sidebar__item sidebar__item--active" data-route="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#/transactions" class="sidebar__item" data-route="transactions">
+          <i data-lucide="receipt"></i>
+          <span>Transactions</span>
+        </a>
+        <a href="#/budgets" class="sidebar__item" data-route="budgets">
+          <i data-lucide="wallet"></i>
+          <span>Budgets</span>
+        </a>
+        <a href="#/goals" class="sidebar__item" data-route="goals">
+          <i data-lucide="target"></i>
+          <span>Goals</span>
+        </a>
+        <a href="#/debts" class="sidebar__item" data-route="debts">
+          <i data-lucide="credit-card"></i>
+          <span>Debts</span>
+        </a>
+        <a href="#/import" class="sidebar__item" data-route="import">
+          <i data-lucide="upload"></i>
+          <span>Import</span>
+        </a>
+        <a href="#/settings" class="sidebar__item" data-route="settings">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button id="theme-toggle" class="sidebar__item">
+          <i data-lucide="moon"></i>
+          <span>Dark Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Main Content Area                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <main class="main">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <button id="menu-toggle" class="topbar__menu-btn">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="topbar__search">
+          <i data-lucide="search"></i>
+          <input type="text" id="global-search" placeholder="Search transactions..." class="topbar__search-input">
+        </div>
+        <div class="topbar__actions">
+          <button id="add-transaction-btn" class="btn btn--primary">
+            <i data-lucide="plus"></i>
+            <span>Add</span>
+          </button>
+          <button id="chat-toggle-btn" class="btn btn--ghost btn--icon">
+            <i data-lucide="bot"></i>
+            <span class="btn__badge" id="chat-badge" style="display:none"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content (views render here) -->
+      <div id="main-content" class="main__content">
+        <!-- Views will be dynamically rendered here by JS -->
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- AI Chat Panel (slides in from right)       -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="chat-panel" class="chat-panel">
+      <div class="chat-panel__header">
+        <div class="chat-panel__title">
+          <i data-lucide="bot"></i>
+          <span>Your AI Accountant</span>
+        </div>
+        <button id="chat-close-btn" class="btn btn--ghost btn--icon btn--sm">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="chat-messages" class="chat-panel__messages">
+        <!-- Chat messages render here -->
+      </div>
+      <div class="chat-panel__input">
+        <textarea id="chat-input" class="chat-panel__textarea" placeholder="Ask your AI accountant anything..." rows="1"></textarea>
+        <button id="chat-send-btn" class="btn btn--primary btn--icon">
+          <i data-lucide="send"></i>
+        </button>
+      </div>
+    </div>
+    <div id="chat-overlay" class="chat-overlay"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="modal-container"></div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Mobile Bottom Navigation (mobile only)     -->
+  <!-- ═══════════════════════════════════════════ -->
+  <nav id="mobile-nav" class="mobile-nav">
+    <a href="#/dashboard" class="mobile-nav__item mobile-nav__item--active" data-route="dashboard">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Home</span>
+    </a>
+    <a href="#/transactions" class="mobile-nav__item" data-route="transactions">
+      <i data-lucide="receipt"></i>
+      <span>Txns</span>
+    </a>
+    <a href="#/budgets" class="mobile-nav__item" data-route="budgets">
+      <i data-lucide="wallet"></i>
+      <span>Budget</span>
+    </a>
+    <a href="#/goals" class="mobile-nav__item" data-route="goals">
+      <i data-lucide="target"></i>
+      <span>Goals</span>
+    </a>
+    <a href="#/settings" class="mobile-nav__item" data-route="settings">
+      <i data-lucide="settings"></i>
+      <span>More</span>
+    </a>
+  </nav>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- App Entry -->
+</body>
+</html>
