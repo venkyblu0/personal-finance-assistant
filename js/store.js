@@ -225,6 +225,17 @@ class Store {
             this._data[k] = defaults[k];
           }
         }
+        // Migration: normalize transaction type to lowercase
+        let needsPersist = false;
+        if (this._data.transactions) {
+          for (const t of this._data.transactions) {
+            if (t.type && t.type !== t.type.toLowerCase()) {
+              t.type = t.type.toLowerCase();
+              needsPersist = true;
+            }
+          }
+        }
+        if (needsPersist) this._persist();
       } else {
         this._data = buildDefaultData();
         this._persist();
@@ -360,7 +371,7 @@ class Store {
       id: generateId('txn'),
       date: data.date || today(),
       amount: Number(data.amount) || 0,
-      type: data.type || 'expense',
+      type: (data.type || 'expense').toLowerCase(),
       categoryId: data.categoryId || '',
       subcategory: data.subcategory || '',
       accountId: data.accountId || '',

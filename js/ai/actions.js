@@ -122,13 +122,34 @@ export async function executeAction(actionObj) {
   switch (action) {
     case 'add_transaction': {
       try {
+        const rawType = (data.type || 'expense').toLowerCase();
+        const type = rawType === 'income' ? 'income' : 'expense';
+
+        // Resolve categoryId — AI might send a name like "transport" instead of actual ID
+        let categoryId = data.categoryId || data.category_id || '';
+        let categoryName = data.category || '';
+        try {
+          const cats = store.getCategories(type) || [];
+          // Try to find by ID first
+          let cat = cats.find(c => c.id === categoryId);
+          // If not found, try matching by name (case-insensitive)
+          if (!cat && (categoryId || categoryName)) {
+            const search = (categoryId || categoryName).toLowerCase();
+            cat = cats.find(c => c.name.toLowerCase() === search || c.id.toLowerCase() === search);
+          }
+          if (cat) {
+            categoryId = cat.id;
+            categoryName = cat.name;
+          }
+        } catch { /* ok */ }
+
         const txData = {
           date: data.date || new Date().toISOString().split('T')[0],
-          type: data.type || 'expense',
+          type,
           amount: parseFloat(data.amount) || 0,
           description: data.description || '',
-          categoryId: data.categoryId || data.category_id || '',
-          category: data.category || '',
+          categoryId,
+          category: categoryName,
           subcategory: data.subcategory || '',
           accountId: data.accountId || data.account_id || '',
           tags: Array.isArray(data.tags) ? data.tags : (data.tags?.split(',').map(t => t.trim()) || []),
@@ -192,7 +213,7 @@ export async function executeAction(actionObj) {
         if (data.newDescription || data.new_description) updates.description = data.newDescription || data.new_description;
         if (data.newDate || data.new_date) updates.date = data.newDate || data.new_date;
         if (data.newCategory || data.new_category_id) updates.categoryId = data.newCategory || data.new_category_id;
-        if (data.newType || data.new_type) updates.type = data.newType || data.new_type;
+        if (data.newType || data.new_type) updates.type = (data.newType || data.new_type).toLowerCase();
         if (data.notes) updates.notes = data.notes;
         const updated = store.updateTransaction(txnId, updates);
         if (!updated) return `❌ Transaction not found.`;
