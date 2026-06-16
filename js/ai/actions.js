@@ -17,35 +17,94 @@ export function parseAIResponse(responseText) {
   if (!responseText) return { text: '', actions: [] };
 
   const actions = [];
-  // Match ```json { ... } ``` blocks
-  const pattern = /```json\s*(\{[\s\S]*?\})\s*```/g;
   let cleanedText = responseText;
-  let match;
 
-  while ((match = pattern.exec(responseText)) !== null) {
+  // Strategy 1: Find ```json ... ``` fenced blocks with proper brace matching
+  const fencePattern = /```json\s*/g;
+  let fenceMatch;
+  const blocksToRemove = [];
+
+  while ((fenceMatch = fencePattern.exec(responseText)) !== null) {
+    const startIdx = fenceMatch.index;
+    const jsonStartIdx = fenceMatch.index + fenceMatch[0].length;
+
+    // Find the opening brace
+    let braceStart = responseText.indexOf('{', jsonStartIdx);
+    if (braceStart === -1) continue;
+
+    // Count braces to find the matching closing brace
+    let depth = 0;
+    let braceEnd = -1;
+    for (let i = braceStart; i < responseText.length; i++) {
+      if (responseText[i] === '{') depth++;
+      else if (responseText[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          braceEnd = i;
+          break;
+        }
+      }
+    }
+    if (braceEnd === -1) continue;
+
+    const jsonStr = responseText.substring(braceStart, braceEnd + 1);
+
+    // Find the closing ``` after the JSON
+    const closingFence = responseText.indexOf('```', braceEnd + 1);
+    const blockEnd = closingFence !== -1 ? closingFence + 3 : braceEnd + 1;
+
     try {
-      const parsed = JSON.parse(match[1]);
+      const parsed = JSON.parse(jsonStr);
       if (parsed.action) {
         actions.push({ action: parsed.action, data: parsed.data || {} });
-        // Remove the JSON block from the display text
-        cleanedText = cleanedText.replace(match[0], '');
+        blocksToRemove.push(responseText.substring(startIdx, blockEnd));
       }
     } catch (e) {
-      console.warn('[Actions] Failed to parse action block:', e.message);
+      console.warn('[Actions] Failed to parse fenced action block:', e.message);
     }
   }
 
-  // Also try to match inline JSON (not fenced) as a fallback
+  // Remove matched blocks from display text (in reverse order to preserve indices)
+  for (const block of blocksToRemove) {
+    cleanedText = cleanedText.replace(block, '');
+  }
+
+  // Strategy 2: Fallback — find inline {"action": "...", "data": {...}} with brace matching
   if (actions.length === 0) {
-    const inlinePattern = /\{"action"\s*:\s*"([^"]+)"\s*,\s*"data"\s*:\s*(\{[\s\S]*?\})\s*\}/g;
-    while ((match = inlinePattern.exec(responseText)) !== null) {
+    const inlinePattern = /\{"action"\s*:\s*"/g;
+    let inlineMatch;
+    const inlineBlocksToRemove = [];
+
+    while ((inlineMatch = inlinePattern.exec(responseText)) !== null) {
+      const braceStart = inlineMatch.index;
+      let depth = 0;
+      let braceEnd = -1;
+      for (let i = braceStart; i < responseText.length; i++) {
+        if (responseText[i] === '{') depth++;
+        else if (responseText[i] === '}') {
+          depth--;
+          if (depth === 0) {
+            braceEnd = i;
+            break;
+          }
+        }
+      }
+      if (braceEnd === -1) continue;
+
+      const jsonStr = responseText.substring(braceStart, braceEnd + 1);
       try {
-        const data = JSON.parse(match[2]);
-        actions.push({ action: match[1], data });
-        cleanedText = cleanedText.replace(match[0], '');
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.action) {
+          actions.push({ action: parsed.action, data: parsed.data || {} });
+          inlineBlocksToRemove.push(jsonStr);
+        }
       } catch {
         // skip
       }
+    }
+
+    for (const block of inlineBlocksToRemove) {
+      cleanedText = cleanedText.replace(block, '');
     }
   }
 
