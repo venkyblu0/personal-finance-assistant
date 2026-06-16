@@ -492,16 +492,16 @@
 /* ─── Modals ─────────────────────────────────────────────── */
 .modal-container {
   display: none;
-}
-
-.modal-container.active {
-  display: flex;
   position: fixed;
   inset: 0;
   z-index: 1000;
   justify-content: center;
   align-items: center;
   padding: var(--space-xl);
+}
+
+.modal-container.active {
+  display: flex;
 }
 
 .modal__overlay {
@@ -521,9 +521,17 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  padding: var(--space-xl);
   animation: modalIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: var(--shadow-lg);
+}
+
+/* Fix form-group margin inside modal body and flex containers */
+.modal__body .form-group {
+  margin-bottom: 0;
+}
+
+.modal__body .grid {
+  gap: var(--space-md);
 }
 
 .modal__header {

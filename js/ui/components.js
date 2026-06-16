@@ -88,12 +88,12 @@ export function showModal({ title = '', content = '', onConfirm, onCancel, confi
       </div>
     `;
 
-    container.style.display = 'flex';
+    container.classList.add('active');
     if (window.lucide) lucide.createIcons();
 
     const close = (result) => {
       container.innerHTML = '';
-      container.style.display = 'none';
+      container.classList.remove('active');
       resolve(result);
     };
 
@@ -248,7 +248,7 @@ export function showTransactionModal(transaction = null, onSave) {
     </div>
   `;
 
-  container.style.display = 'flex';
+  container.classList.add('active');
   if (window.lucide) lucide.createIcons();
 
   // Toggle category optgroups based on selected type
@@ -265,7 +265,7 @@ export function showTransactionModal(transaction = null, onSave) {
 
   const closeModal = () => {
     container.innerHTML = '';
-    container.style.display = 'none';
+    container.classList.remove('active');
   };
 
   container.querySelector('[data-action="close"]').addEventListener('click', closeModal);
