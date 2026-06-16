@@ -12,6 +12,46 @@
   animation: fadeSlideUp 500ms ease;
 }
 
+/* ─── Transaction Row Actions (Edit / Delete) ──────────── */
+.tx-row-wrapper {
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.tx-row-wrapper:last-child {
+  border-bottom: none;
+}
+
+.tx-row-wrapper:hover {
+  background: var(--glass-hover);
+}
+
+.tx-row-wrapper .tx-row-actions {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.tx-row-wrapper:hover .tx-row-actions {
+  opacity: 1;
+}
+
+/* On mobile/touch, always show actions */
+@media (hover: none) {
+  .tx-row-wrapper .tx-row-actions {
+    opacity: 1;
+  }
+}
+
+.tx-row-actions .btn--ghost:hover {
+  background: var(--glass);
+}
+
+/* Override transaction-row border when inside tx-row-wrapper */
+.tx-row-wrapper .transaction-row {
+  border-bottom: none;
+  padding-right: 0;
+}
+
 .transactions-page__header {
   display: flex;
   justify-content: space-between;

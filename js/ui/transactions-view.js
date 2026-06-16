@@ -176,13 +176,32 @@ export function renderTransactions(searchQuery = '') {
     // Delete single
     const deleteBtn = e.target.closest('.tx-delete-btn');
     if (deleteBtn) {
+      e.stopPropagation();
       const id = deleteBtn.dataset.id;
-      showConfirmModal('Delete this transaction?', () => {
+      const tx = store.getTransaction(id);
+      const desc = tx ? `Delete "${tx.description || 'transaction'}" — ${formatCurrency(tx.amount)}?` : 'Delete this transaction?';
+      showConfirmModal(desc, () => {
         store.deleteTransaction(id);
         showToast('Transaction deleted', 'success');
         renderFilteredList(container);
         window.dispatchEvent(new CustomEvent('store-updated'));
       });
+      return;
+    }
+
+    // Edit via edit button
+    const editBtn = e.target.closest('.tx-edit-btn');
+    if (editBtn) {
+      e.stopPropagation();
+      const tx = store.getTransaction(editBtn.dataset.id);
+      if (tx) {
+        showTransactionModal(tx, (data) => {
+          store.updateTransaction(tx.id, data);
+          showToast('Transaction updated', 'success');
+          renderFilteredList(container);
+          window.dispatchEvent(new CustomEvent('store-updated'));
+        });
+      }
       return;
     }
 
@@ -281,15 +300,20 @@ function renderFilteredList(root) {
       const checked = selectedIds.has(t.id) ? 'checked' : '';
       return `
         <div style="display:flex;align-items:center;gap:0.5rem;padding-left:0.75rem;position:relative" class="tx-row-wrapper">
-          <div class="tx-checkbox ${checked}" data-id="${t.id}" style="width:18px;height:18px;border:2px solid var(--border-color);border-radius:4px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;${checked ? 'background:var(--accent-primary);border-color:var(--accent-primary)' : ''}">
+          <div class="tx-checkbox ${checked}" data-id="${t.id}" style="width:18px;height:18px;border:2px solid var(--glass-border-hover);border-radius:4px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;${checked ? 'background:var(--accent-primary);border-color:var(--accent-primary)' : ''}">
             ${checked ? '<i data-lucide="check" style="width:12px;height:12px;color:#fff"></i>' : ''}
           </div>
           <div style="flex:1;min-width:0">
             ${renderTransactionRow(t)}
           </div>
-          <button class="tx-delete-btn btn btn--icon btn--ghost btn--sm" data-id="${t.id}" style="opacity:0;transition:opacity 0.15s;position:absolute;right:0.5rem" title="Delete">
-            <i data-lucide="trash-2" style="width:16px;height:16px;color:var(--accent-danger)"></i>
-          </button>
+          <div class="tx-row-actions" style="display:flex;gap:0.25rem;flex-shrink:0;padding-right:0.75rem">
+            <button class="tx-edit-btn btn btn--icon btn--ghost btn--sm" data-id="${t.id}" title="Edit">
+              <i data-lucide="pencil" style="width:15px;height:15px;color:var(--accent-primary)"></i>
+            </button>
+            <button class="tx-delete-btn btn btn--icon btn--ghost btn--sm" data-id="${t.id}" title="Delete">
+              <i data-lucide="trash-2" style="width:15px;height:15px;color:var(--accent-danger)"></i>
+            </button>
+          </div>
         </div>
       `;
     }).join('');
